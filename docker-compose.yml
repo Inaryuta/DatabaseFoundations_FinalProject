@@ -1,0 +1,21 @@
+# Use root/example as user/password credentials
+
+
+services:
+  db:
+    container_name: db_project_container
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: PASS                
+      MYSQL_DATABASE: db_project               
+    volumes:
+      - D:/DockerDB:/var/lib/mysql             
+    ports:
+      - "3308:3306"                            
+    networks:
+      - db-network                             
+
+networks:
+  db-network:                                  
+    driver: bridge
