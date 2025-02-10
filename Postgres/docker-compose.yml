@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  db:
+    container_name: postgres_project_container
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password     # Asegúrate de que esta contraseña sea la que deseas usar
+      POSTGRES_DB: shop               # Cambiado de "condor" a "shop"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # Se mapea el puerto interno 5432 al 5433 en el host
+    networks:
+      - db-network
+
+networks:
+  db-network:
+    driver: bridge
