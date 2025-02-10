@@ -1,9 +1,8 @@
 from fastapi import APIRouter
-
-from CRUD.user import UserData, UsersCRUD
+from CRUD.users import UserData, UserCRUD  # Corregido el nombre de la clase
 
 router = APIRouter()
-crud = UsersCRUD()
+crud = UserCRUD()  # Se instancia la clase
 
 @router.post("/user/create", response_model=int)
 def create(data: UserData):
@@ -17,18 +16,18 @@ def update(id_: int, data: UserData):
 def delete(id_: int):
     return crud.delete(id_)
 
-@router.get("/user/get_by_id/{id_}")
+@router.get("/user/get_by_id/{id_}")  # ✅ Corregido
 def get_by_id(id_: int):
-    return crud.get_by_id(id_)
-@router.get("/user/get_all")
+    return crud.get_by_id(id_)   
+
+@router.get("/user/get_all")  # ✅ Corregido
 def get_all():
     return crud.get_all()
 
-@router.get("/user/get_by_name/{name}")
+@router.get("/user/get_by_name/{name}")  # ✅ Corregido
 def get_by_name(name: str):
     return crud.get_by_name(name)
 
-
-@router.get("/user/get_by_email/{email}")
+@router.get("/user/get_by_email/{email}")  # ✅ Corregido
 def get_by_email(email: str):
     return crud.get_by_email(email)

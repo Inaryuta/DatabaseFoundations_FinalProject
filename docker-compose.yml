@@ -1,20 +1,18 @@
-version: '3.8'
 services:
   db:
-    container_name: postgres_project_container
-    image: postgres:latest
+    container_name: db_project
+    image: mysql:latest
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password     # Asegurarse de que esta contraseña sea la que deseas usar
-      POSTGRES_DB: shop              
+      MYSQL_ROOT_PASSWORD: PASS                
+      MYSQL_DATABASE: db_project           
     volumes:
-      - ./pgdata:/var/lib/postgresql/data
+      - D:/DockerDB:/var/lib/mysql             
     ports:
-      - "5433:5432"  
+      - "3308:3306"                            
     networks:
-      - db-network
+      - db-network                             
 
 networks:
-  db-network:
+  db-network:                                  
     driver: bridge
