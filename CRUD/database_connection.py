@@ -1,27 +1,26 @@
-"""Este módulo maneja la conexión a la base de datos MySQL."""
+import psycopg2
+from psycopg2 import OperationalError
 
-import mysql.connector
-from mysql.connector import Error
-
-class MySQLDatabaseConnection:
+class PostgresDatabaseConnection:
     def __init__(self):
-        self._dbname = "db_project"  # Nombre de la BD en Docker
-        self._duser = "root"
-        self._dpass = "PASS"       # Debe coincidir con Docker Compose
+        self._dbname = "shop"                # Cambiado de "condor" a "shop"
+        self._duser = "postgres"
+        self._dpass = "password"             # Debe coincidir con la contraseña del docker-compose
         self._dhost = "localhost"
-        self._dport = 3308
+        self._dport = "5433"                 # Usa el puerto mapeado (5433 en este caso)
         self.connection = None
 
     def connect(self):
         try:
-            self.connection = mysql.connector.connect(
-                host=self._dhost,
+            self.connection = psycopg2.connect(
+                dbname=self._dbname,
                 user=self._duser,
                 password=self._dpass,
-                database=self._dbname,
+                host=self._dhost,
                 port=self._dport
             )
-            if self.connection.is_connected():
-                print("Conexion a MySQL exitosa")
-        except Error as e:
-            print(f"Error al conectar a MySQL: {e}")
+            print("Conexión a la base de datos exitosa")
+        except OperationalError as e:
+            print(f"Error al conectar a la base de datos: {e}")
+        except Exception as i:
+            print(f"Error desconocido: {i}")

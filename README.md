@@ -111,30 +111,73 @@ docker exec -it <container_id> python manage.py migrate
 The following endpoints are available for testing the database:
 
 #### Users
+- **Create User**: `POST /users`
+- **Get User by ID**: `GET /users/{user_id}`
+- **Update User**: `PUT /users/{user_id}`
+- **Delete User**: `DELETE /users/{user_id}`
 
-- Create User: POST /users
+#### Accessories
+- **Create Accessory**: `POST /accessories`
+- **Get All Accessories**: `GET /accessories`
+- **Get Accessory by ID**: `GET /accessories/{accessory_id}`
+- **Update Accessory**: `PUT /accessories/{accessory_id}`
+- **Delete Accessory**: `DELETE /accessories/{accessory_id}`
 
-- Get User by ID: GET /users/{user_id}
+#### Brands
+- **Create Brand**: `POST /brands`
+- **Get All Brands**: `GET /brands`
+- **Get Brand by ID**: `GET /brands/{brand_id}`
+- **Update Brand**: `PUT /brands/{brand_id}`
+- **Delete Brand**: `DELETE /brands/{brand_id}`
 
-- Update User: PUT /users/{user_id}
+#### Categories
+- **Create Category**: `POST /categories`
+- **Get All Categories**: `GET /categories`
+- **Get Category by ID**: `GET /categories/{category_id}`
+- **Update Category**: `PUT /categories/{category_id}`
+- **Delete Category**: `DELETE /categories/{category_id}`
 
-- Delete User: DELETE /users/{user_id}
+#### History Receipts
+- **Create History Receipt**: `POST /history_receipts`
+- **Get All History Receipts**: `GET /history_receipts`
+- **Get History Receipt by ID**: `GET /history_receipts/{history_receipt_id}`
+- **Update History Receipt**: `PUT /history_receipts/{history_receipt_id}`
+- **Delete History Receipt**: `DELETE /history_receipts/{history_receipt_id}`
 
-#### Products
+#### Instruments
+- **Create Instrument**: `POST /instruments`
+- **Get All Instruments**: `GET /instruments`
+- **Get Instrument by ID**: `GET /instruments/{instrument_id}`
+- **Update Instrument**: `PUT /instruments/{instrument_id}`
+- **Delete Instrument**: `DELETE /instruments/{instrument_id}`
 
-- Create Product: POST /products
-
-- Get All Products: GET /products
-
-- Get Product by ID: GET /products/{product_id}
+#### Inventory Receipts
+- **Create Inventory Receipt**: `POST /inventory_receipts`
+- **Get All Inventory Receipts**: `GET /inventory_receipts`
+- **Get Inventory Receipt by ID**: `GET /inventory_receipts/{inventory_receipt_id}`
+- **Update Inventory Receipt**: `PUT /inventory_receipts/{inventory_receipt_id}`
+- **Delete Inventory Receipt**: `DELETE /inventory_receipts/{inventory_receipt_id}`
 
 #### Inventory
-- Update Inventory: PUT /inventory/{inventory_id}
+- **Create Inventory**: `POST /inventory`
+- **Get All Inventory**: `GET /inventory`
+- **Get Inventory by ID**: `GET /inventory/{inventory_id}`
+- **Update Inventory**: `PUT /inventory/{inventory_id}`
+- **Delete Inventory**: `DELETE /inventory/{inventory_id}`
 
 #### Receipts
-- Create Receipt: POST /receipts
+- **Create Receipt**: `POST /receipts`
+- **Get All Receipts**: `GET /receipts`
+- **Get Receipt by ID**: `GET /receipts/{receipt_id}`
+- **Update Receipt**: `PUT /receipts/{receipt_id}`
+- **Delete Receipt**: `DELETE /receipts/{receipt_id}`
 
-- Get Receipt History: GET /receipts/history
+#### Suppliers
+- **Create Supplier**: `POST /suppliers`
+- **Get All Suppliers**: `GET /suppliers`
+- **Get Supplier by ID**: `GET /suppliers/{supplier_id}`
+- **Update Supplier**: `PUT /suppliers/{supplier_id}`
+- **Delete Supplier**: `DELETE /suppliers/{supplier_id}`
 
 ### Future Improvements
 - Implement a shopping cart feature.

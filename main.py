@@ -1,39 +1,30 @@
-from fastapi import FastAPI, HTTPException
-from typing import List
-from CRUD.users import UserCRUD, UserData
+from fastapi import FastAPI
 
-app = FastAPI()
-user_crud = UserCRUD()
+from services.accessory_service import router as accessory_router
+from services.brand_service import router as brand_router
+from services.category_service import router as category_router
+from services.history_receipts_service import router as history_receipts_router
+from services.instrument_service import router as instrument_router
+from services.inventory_receipt_service import router as inventory_receipt_router
+from services.inventory_service import router as inventory_router
+from services.receipt_service import router as receipt_router
+from services.supplier_service import router as supplier_router
+from services.user_service import router as user_router
 
-@app.post("/users/", response_model=int)
-def create_user(user: UserData):
-    user_id = user_crud.create(user)
-    if not user_id:
-        raise HTTPException(status_code=400, detail="Error creating user")
-    return user_id
+app = FastAPI(
+    title="Ortizo Store Management",
+    version="0.0.1",
+    description="This is an example of a CRUD using services for Ortizo music store."
+)
 
-@app.get("/users/{user_id}", response_model=UserData)
-def get_user(user_id: int):
-    user = user_crud.get_by_id(user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return UserData(UserID=user[0], Username=user[1], Password=user[2], Role=user[3], Email=user[4])
-
-@app.get("/users/", response_model=List[UserData])
-def get_all_users():
-    users = user_crud.get_all()
-    return [UserData(UserID=u[0], Username=u[1], Password=u[2], Role=u[3], Email=u[4]) for u in users]
-
-@app.put("/users/{user_id}")
-def update_user(user_id: int, user: UserData):
-    if not user_crud.get_by_id(user_id):
-        raise HTTPException(status_code=404, detail="User not found")
-    user_crud.update(user_id, user)
-    return {"message": "User updated successfully"}
-
-@app.delete("/users/{user_id}")
-def delete_user(user_id: int):
-    if not user_crud.get_by_id(user_id):
-        raise HTTPException(status_code=404, detail="User not found")
-    user_crud.delete(user_id)
-    return {"message": "User deleted successfully"}
+# Routers de cada servicio
+app.include_router(accessory_router)  # Servicio para accesorios
+app.include_router(brand_router)  # Servicio para marcas
+app.include_router(category_router)  # Servicio para categorías
+app.include_router(history_receipts_router)  # Servicio para historial de recibos
+app.include_router(instrument_router)  # Servicio para instrumentos
+app.include_router(inventory_receipt_router)  # Servicio para Inventory_Receipt
+app.include_router(inventory_router)  # Servicio para inventarios
+app.include_router(receipt_router)  # Servicio para recibos
+app.include_router(supplier_router)  # Servicio para proveedores
+app.include_router(user_router)  # Servicio para usuarios
