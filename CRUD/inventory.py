@@ -91,8 +91,15 @@ class InventoryCRUD:
 
     def get_all(self) -> List[InventoryData]:
         query = """
-            SELECT InventoryID, InstrumentID, AccessoryID, Quantity, DateUpdated, InventoryReceiptID
-            FROM Inventory;
+             SELECT I.InventoryID,
+               Ins.Name AS Instrument,
+               A.Name AS Accessory,
+               I.Quantity, I.DateUpdated
+        FROM Inventory I
+        LEFT JOIN Instrument Ins ON I.InstrumentID = Ins.InstrumentID 
+        LEFT JOIN Accessory A ON I.AccessoryID = A.AccessoryID
+        ORDER BY I.DateUpdated DESC
+        LIMIT 10 OFFSET 0;
         """
         cursor = self.db_connection.connection.cursor()
         cursor.execute(query)
