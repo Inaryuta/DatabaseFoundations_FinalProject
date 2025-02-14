@@ -42,7 +42,7 @@ class categoryCRUD:
             print(f"Failing in the category creation. {e}")
             raise e
         
-    def update(self, data: categoryData, id_: int):
+    def update(self,  id_: int, data: categoryData):
         query = """
             UPDATE Category
             SET Name = %s, Description = %s
@@ -67,7 +67,10 @@ class categoryCRUD:
 
     def get_all(self) -> List[categoryData]:
         query = """
-            SELECT * FROM Category;
+            SELECT CategoryID, Name, Description
+        FROM Category
+        ORDER BY Name
+        LIMIT 10 OFFSET 0;
         """
         category = []
         try:
