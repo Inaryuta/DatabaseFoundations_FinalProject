@@ -87,8 +87,11 @@ class HistoryReceiptsCRUD:
 
     def get_all(self) -> List[HistoryReceiptsData]:
         query = """
-            SELECT HistoryID, ReceiptID, Date, Status
-            FROM History_Receipts;
+            SELECT H.HistoryID, H.ReceiptID, R.TotalAmount, H.Date, H.Status
+        FROM History_Receipts H
+        JOIN Receipt R ON H.ReceiptID = R.ReceiptID 
+        ORDER BY H.Date DESC
+        LIMIT %s OFFSET %s;
         """
         cursor = self.db_connection.connection.cursor()
         cursor.execute(query)
