@@ -4,15 +4,18 @@ from pydantic import BaseModel
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
-class SupplierCreate(BaseModel):
-    Name: str
-    Address: str | None
-    ContactInfo: str
+class ReceiptCreate(BaseModel):
+    UserID: int
+    SupplierID: int | None
+    TotalAmount: float
+    ReceiptType: str  # 'purchase' o 'sale'
+    InventoryReceiptID: int | None
 
-class SupplierData(SupplierCreate):
-    SupplierID: int
+class ReceiptData(ReceiptCreate):
+    ReceiptID: int
+    Date: str
 
-class SupplierCRUD:
+class ReceiptCRUD:
     def __init__(self):
         self.db_connection = PostgresDatabaseConnection()
         self.db_connection.connect()
@@ -28,78 +31,89 @@ class SupplierCRUD:
             print(f"Database operation failed. {e}")
             raise e
 
-    def create(self, data: SupplierCreate):
+    def create(self, data: ReceiptCreate):
         query = """
-            INSERT INTO Supplier (Name, Address, ContactInfo)
-            VALUES (%s, %s, %s)
-            RETURNING SupplierID;
+            INSERT INTO Receipt (UserID, SupplierID, TotalAmount, ReceiptType, InventoryReceiptID)
+        VALUES (%s, %s, %s, %s, %s)
+        RETURNING ReceiptID;
         """
         try:
-            values = (data.Name, data.Address, data.ContactInfo)
+            values = (data.UserID, data.SupplierID, data.TotalAmount, data.ReceiptType, data.InventoryReceiptID)
             cursor = self.db_connection.connection.cursor()
             cursor.execute(query, values)
-            supplier_id = cursor.fetchone()[0]
+            receipt_id = cursor.fetchone()[0]
             self.db_connection.connection.commit()
             cursor.close()
-            return supplier_id
+            return receipt_id
         except IntegrityError:
             self.db_connection.connection.rollback()
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Error in supplier creation"
+                detail="Error in receipt creation"
             )
 
-    def update(self, id_: int, data: SupplierData):
+    def update(self, id_: int, data: ReceiptData):
         query = """
-            UPDATE Supplier
-            SET Name = %s, Address = %s, ContactInfo = %s
-            WHERE SupplierID = %s;
+            UPDATE Receipt
+            SET UserID = %s, SupplierID = %s, TotalAmount = %s, ReceiptType = %s, InventoryReceiptID = %s
+            WHERE ReceiptID = %s;
         """
-        values = (data.Name, data.Address, data.ContactInfo, id_)
+        values = (data.UserID, data.SupplierID, data.TotalAmount, data.ReceiptType, data.InventoryReceiptID, id_)
         self._execution(query, values)
 
     def delete(self, id_: int):
         query = """
-            DELETE FROM Supplier
-            WHERE SupplierID = %s;
+            DELETE FROM Receipt
+            WHERE ReceiptID = %s;
         """
         values = (id_,)
         self._execution(query, values)
 
-    def get_by_id(self, id_: int) -> SupplierData:
+    def get_by_id(self, id_: int) -> ReceiptData:
         query = """
-            SELECT SupplierID, Name, Address, ContactInfo
-            FROM Supplier
-            WHERE SupplierID = %s;
+            SELECT ReceiptID, UserID, SupplierID, Date, TotalAmount, ReceiptType, InventoryReceiptID
+            FROM Receipt
+            WHERE ReceiptID = %s;
         """
         cursor = self.db_connection.connection.cursor()
         cursor.execute(query, (id_,))
-        supplier = cursor.fetchone()
+        receipt = cursor.fetchone()
         cursor.close()
-        if supplier:
-            return SupplierData(
-                SupplierID=supplier[0],
-                Name=supplier[1],
-                Address=supplier[2],
-                ContactInfo=supplier[3]
+        if receipt:
+            return ReceiptData(
+                ReceiptID=receipt[0],
+                UserID=receipt[1],
+                SupplierID=receipt[2],
+                Date=str(receipt[3]),
+                TotalAmount=float(receipt[4]),
+                ReceiptType=receipt[5],
+                InventoryReceiptID=receipt[6]
             )
-        raise HTTPException(status_code=404, detail="Supplier not found")
+        raise HTTPException(status_code=404, detail="Receipt not found")
 
-    def get_all(self) -> List[SupplierData]:
+    def get_all(self) -> List[ReceiptData]:
         query = """
-            SELECT SupplierID, Name, Address, ContactInfo
-            FROM Supplier;
+            SELECT R.ReceiptID, U.Username, S.Name AS Supplier, R.Date,
+               R.TotalAmount, R.ReceiptType
+        FROM Receipt R
+        JOIN users U ON R.UserID = U.UserID  
+        JOIN Supplier S ON R.SupplierID = S.SupplierID  
+        ORDER BY R.Date DESC
+        LIMIT 10 OFFSET 0;
         """
         cursor = self.db_connection.connection.cursor()
         cursor.execute(query)
-        suppliers = cursor.fetchall()
+        receipts = cursor.fetchall()
         cursor.close()
         return [
-            SupplierData(
-                SupplierID=row[0],
-                Name=row[1],
-                Address=row[2],
-                ContactInfo=row[3]
+            ReceiptData(
+                ReceiptID=row[0],
+                UserID=row[1],
+                SupplierID=row[2],
+                Date=str(row[3]),
+                TotalAmount=float(row[4]),
+                ReceiptType=row[5],
+                InventoryReceiptID=row[6]
             )
-            for row in suppliers
+            for row in receipts
         ]
