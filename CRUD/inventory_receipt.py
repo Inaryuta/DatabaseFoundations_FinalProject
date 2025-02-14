@@ -101,7 +101,11 @@ class inventoryReceiptCRUD:
 
     def get_all(self) -> List[InventoryReceiptData]:
         query = """
-            SELECT * FROM Inventory_Receipt;
+             SELECT IR.InventoryID, R.TotalAmount, IR.Quantity
+        FROM Inventory_Receipt IR
+        JOIN Receipt R ON IR.ReceiptID = R.ReceiptID  
+        ORDER BY R.Date DESC
+        LIMIT 10 OFFSET 0;
         """
         inventory_receipts = []
         try:
