@@ -34,8 +34,8 @@ class userCRUD:
         
         query = """
             INSERT INTO users (Username, Password, Role, Email)
-            VALUES (%s, %s, %s, %s)
-            RETURNING UserID;
+        VALUES (%s, %s, %s, %s)
+        RETURNING UserID;
         """
         try:
             values = (data.Username, data.Password, data.Role, data.Email)
@@ -101,8 +101,9 @@ class userCRUD:
     def get_all(self) -> List[UserData]:
    
         query = """
-            SELECT *
-            FROM users;
+            SELECT UserID, Username, Role, Email
+        FROM users
+        ORDER BY Username;
         """
         users = []
         try:
