@@ -34,8 +34,8 @@ class InstrumentCRUD:
     def create(self, data: InstrumentCreate):
         query = """
             INSERT INTO Instrument (Name, Description, Price, Stock, CategoryID, BrandID)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            RETURNING InstrumentID;
+        VALUES (%s, %s, %s, %s, %s, %s)
+        RETURNING InstrumentID;
         """
         try:
             values = (data.Name, data.Description, data.Price, data.Stock, data.CategoryID, data.BrandID)
@@ -93,8 +93,13 @@ class InstrumentCRUD:
 
     def get_all(self) -> List[InstrumentData]:
         query = """
-            SELECT InstrumentID, Name, Description, Price, Stock, CategoryID, BrandID
-            FROM Instrument;
+            SELECT I.InstrumentID, I.Name, I.Description, I.Price, I.Stock,
+               C.Name AS Category, B.Name AS Brand
+        FROM Instrument I
+        JOIN Category C ON I.CategoryID = C.CategoryID 
+        JOIN Brand B ON I.BrandID = B.BrandID          
+        ORDER BY I.Name
+        LIMIT 10 OFFSET 0; 
         """
         cursor = self.db_connection.connection.cursor()
         cursor.execute(query)
