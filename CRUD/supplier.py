@@ -56,15 +56,41 @@ class SupplierCRUD:
             WHERE SupplierID = %s;
         """
         values = (data.Name, data.Address, data.ContactInfo, id_)
-        self._execution(query, values)
+        try:
+            cursor = self.db_connection.connection.cursor()
+            cursor.execute(query, values)
+            self.db_connection.connection.commit()
+            affected_rows = cursor.rowcount
+            cursor.close()
+            if affected_rows == 0:
+                raise HTTPException(status_code=404, detail="Supplier not found")
+            return {"message": "Supplier updated successfully"}
+        except Exception as e:
+            self.db_connection.connection.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error updating supplier: {e}"
+            )
+
 
     def delete(self, id_: int):
-        query = """
-            DELETE FROM Supplier
-            WHERE SupplierID = %s;
-        """
-        values = (id_,)
-        self._execution(query, values)
+        query = "DELETE FROM Supplier WHERE SupplierID = %s;"
+        try:
+            cursor = self.db_connection.connection.cursor()
+            cursor.execute(query, (id_,))
+            self.db_connection.connection.commit()
+            affected_rows = cursor.rowcount
+            cursor.close()
+            if affected_rows == 0:
+                raise HTTPException(status_code=404, detail="Supplier not found")
+            return {"message": "Supplier deleted successfully"}
+        except Exception as e:
+            self.db_connection.connection.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error deleting supplier: {e}"
+            )
+
 
     def get_by_id(self, id_: int) -> SupplierData:
         query = """
@@ -85,15 +111,15 @@ class SupplierCRUD:
             )
         raise HTTPException(status_code=404, detail="Supplier not found")
 
-    def get_all(self) -> List[SupplierData]:
+    def get_all(self, limit: int = 10, offset: int = 0) -> List[SupplierData]:
         query = """
             SELECT SupplierID, Name, Address, ContactInfo
-        FROM Supplier
-        ORDER BY Name
-        LIMIT 10 OFFSET 0;
+            FROM Supplier
+            ORDER BY Name
+            LIMIT %s OFFSET %s;
         """
         cursor = self.db_connection.connection.cursor()
-        cursor.execute(query)
+        cursor.execute(query, (limit, offset))
         suppliers = cursor.fetchall()
         cursor.close()
         return [
@@ -105,3 +131,4 @@ class SupplierCRUD:
             )
             for row in suppliers
         ]
+

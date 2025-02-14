@@ -27,24 +27,32 @@ class userCRUD:
             cursor.close()
         except Exception as e:
             self.db_connection.connection.rollback()
-            print(f"Failing in the user update. {e}")
-            raise e
+            print(f"Failing in the operation: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Error during operation: {e}"
+            )
 
     def create(self, data: UserCreate):
-        
         query = """
             INSERT INTO users (Username, Password, Role, Email)
-        VALUES (%s, %s, %s, %s)
-        RETURNING UserID;
+            VALUES (%s, %s, %s, %s)
+            RETURNING UserID, Username, Password, Role, Email;
         """
         try:
             values = (data.Username, data.Password, data.Role, data.Email)
             cursor = self.db_connection.connection.cursor()
             cursor.execute(query, values)
-            user_id = cursor.fetchone()[0]
+            user_data = cursor.fetchone()
             self.db_connection.connection.commit()
             cursor.close()
-            return user_id
+            return UserData(**{
+                "UserID": user_data[0],
+                "Username": user_data[1],
+                "Password": user_data[2],
+                "Role": user_data[3],
+                "Email": user_data[4]
+            })
         except IntegrityError as e:
             self.db_connection.connection.rollback()
             if "users_username_key" in str(e.orig):
@@ -58,7 +66,6 @@ class userCRUD:
                     detail="Error en la creación del usuario"
                 )
 
-
     def update(self, id_: int, data: UserData):
         query = """
             UPDATE users
@@ -68,8 +75,9 @@ class userCRUD:
         try:
             values = (data.Username, data.Password, id_)
             self._execution(query, values)
+            return {"message": "User updated successfully"}
         except Exception as e:
-            print(f"Failing in the user update. {e}")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error updating user: {e}")
 
     def delete(self, id_: int):
         query = """
@@ -79,8 +87,9 @@ class userCRUD:
         try:
             values = (id_,)
             self._execution(query, values)
+            return {"message": "User deleted successfully"}
         except Exception as e:
-            print(f"Failing in the user delete. {e}")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error deleting user: {e}")
 
     def get_by_id(self, id_: int) -> UserData:
         query = """
@@ -89,31 +98,45 @@ class userCRUD:
             WHERE UserID = %s;
         """
         try:
-            values = (id_, )
+            values = (id_,)
             cursor = self.db_connection.connection.cursor()
             cursor.execute(query, values)
             user = cursor.fetchone()
             cursor.close()
-            return user
+            if user:
+                return UserData(**{
+                    "UserID": id_,
+                    "Username": user[0],
+                    "Password": user[1],
+                    "Role": user[2],
+                    "Email": user[3]
+                })
+            else:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         except Exception as e:
-            print(f"Failing to get user by id. {e}")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error fetching user: {e}")
 
     def get_all(self) -> List[UserData]:
-   
         query = """
-            SELECT UserID, Username, Role, Email
-        FROM users
-        ORDER BY Username;
+            SELECT UserID, Username, Password, Role, Email
+            FROM users
+            ORDER BY Username;
         """
         users = []
         try:
             cursor = self.db_connection.connection.cursor()
             cursor.execute(query)
             users = cursor.fetchall()
+            cursor.close()
+            return [UserData(**{
+                "UserID": user[0],     # ID del usuario
+                "Username": user[1],   # Nombre de usuario
+                "Password": user[2],   # Contraseña (antes estaba omitiéndose)
+                "Role": user[3],       # Rol
+                "Email": user[4]       # Correo electrónico
+            }) for user in users]
         except Exception as e:
-            print(f"Fail getting all the users. {e}")
-
-        return users
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error fetching users: {e}")
 
     def get_by_name(self, name: str):
         query = """
@@ -122,28 +145,42 @@ class userCRUD:
             WHERE Username ILIKE %s;
         """
         try:
-            values = (f"%{name}%", )
+            values = (f"%{name}%",)
             cursor = self.db_connection.connection.cursor()
             cursor.execute(query, values)
             users = cursor.fetchall()
             cursor.close()
-            return users
+            return [UserData(**{
+                "UserID": user[0],
+                "Username": user[1],
+                "Password": user[2],
+                "Role": user[3],
+                "Email": user[4]
+            }) for user in users]
         except Exception as e:
-            print(f"Fail getting users by name. {e}")
-
-
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error fetching users by name: {e}")
 
     def get_by_email(self, email: str):
         query = """
             SELECT UserID, Username, Password, Role, Email
             FROM users
-            WHERE email = %s;
+            WHERE Email = %s;
         """
         try:
-            values = (email, )
+            values = (email,)
             cursor = self.db_connection.connection.cursor()
             cursor.execute(query, values)
             user = cursor.fetchone()
-            return user
+            cursor.close()
+            if user:
+                return UserData(**{
+                    "UserID": user[0],
+                    "Username": user[1],
+                    "Password": user[2],
+                    "Role": user[3],
+                    "Email": user[4]
+                })
+            else:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         except Exception as e:
-            print(f"Fail getting a user by email. {e}")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error fetching user by email: {e}")

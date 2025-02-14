@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from CRUD.receipt import ReceiptCRUD, ReceiptCreate, ReceiptData
 
+
 router = APIRouter()
 crud = ReceiptCRUD()
 
@@ -10,7 +11,8 @@ def create_receipt(data: ReceiptCreate):
 
 @router.put("/receipt/update/{id_}")
 def update_receipt(id_: int, data: ReceiptData):
-    return crud.update(id_, data)
+    crud.update(id_, data)
+    return {"message": "Receipt updated successfully"}
 
 @router.delete("/receipt/delete/{id_}")
 def delete_receipt(id_: int):

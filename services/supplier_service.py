@@ -21,5 +21,6 @@ def get_by_id_supplier(id_: int):
     return crud.get_by_id(id_)
 
 @router.get("/supplier/get_all", response_model=list[SupplierData])
-def get_all_suppliers():
-    return crud.get_all()
+def get_all_suppliers(limit: int = 10, offset: int = 0):
+    return crud.get_all(limit, offset)
+

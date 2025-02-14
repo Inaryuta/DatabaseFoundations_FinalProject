@@ -3,6 +3,10 @@ from typing import List
 from pydantic import BaseModel
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
+import logging
+
+# Configuración de logging para el control de errores
+logging.basicConfig(level=logging.ERROR)
 
 class InventoryCreate(BaseModel):
     InstrumentID: int
@@ -27,17 +31,31 @@ class InventoryCRUD:
             cursor.close()
         except Exception as e:
             self.db_connection.connection.rollback()
-            print(f"Database operation failed. {e}")
-            raise e
+            logging.error(f"Database operation failed. {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal server error during database operation"
+            )
 
     def create(self, data: InventoryCreate):
+        # Verificar que al menos uno de los IDs (InstrumentID o AccessoryID) esté presente
+        if not data.InstrumentID and not data.AccessoryID:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Must provide either an InstrumentID or AccessoryID"
+            )
+
+        # Elegir entre InstrumentID o AccessoryID
+        instrument_id = data.InstrumentID if data.InstrumentID else None
+        accessory_id = data.AccessoryID if data.AccessoryID else None
+
         query = """
-            INSERT INTO Inventory (InstrumentID, AccessoryID, Quantity, InventoryReceiptID)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO Inventory (InstrumentID, AccessoryID, Quantity)
+            VALUES (%s, %s, %s)
             RETURNING InventoryID;
         """
         try:
-            values = (data.InstrumentID, data.AccessoryID, data.Quantity, data.InventoryReceiptID)
+            values = (instrument_id, accessory_id, data.Quantity)
             cursor = self.db_connection.connection.cursor()
             cursor.execute(query, values)
             inventory_id = cursor.fetchone()[0]
@@ -46,9 +64,16 @@ class InventoryCRUD:
             return inventory_id
         except IntegrityError:
             self.db_connection.connection.rollback()
+            logging.error("Integrity error while creating inventory.")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Error in inventory creation"
+                detail="Error in inventory creation: Integrity error"
+            )
+        except Exception as e:
+            logging.error(f"Error while creating inventory: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error occurred while creating inventory"
             )
 
     def update(self, id_: int, data: InventoryData):
@@ -91,20 +116,24 @@ class InventoryCRUD:
 
     def get_all(self) -> List[InventoryData]:
         query = """
-             SELECT I.InventoryID,
-               Ins.Name AS Instrument,
-               A.Name AS Accessory,
-               I.Quantity, I.DateUpdated
-        FROM Inventory I
-        LEFT JOIN Instrument Ins ON I.InstrumentID = Ins.InstrumentID 
-        LEFT JOIN Accessory A ON I.AccessoryID = A.AccessoryID
-        ORDER BY I.DateUpdated DESC
-        LIMIT 10 OFFSET 0;
+            SELECT I.InventoryID, 
+                I.InstrumentID, 
+                I.AccessoryID, 
+                I.Quantity, 
+                I.DateUpdated, 
+                I.InventoryReceiptID
+            FROM Inventory I
+            ORDER BY I.DateUpdated DESC
+            LIMIT 10 OFFSET 0;
         """
         cursor = self.db_connection.connection.cursor()
         cursor.execute(query)
         inventories = cursor.fetchall()
         cursor.close()
+        
+        if not inventories:
+            raise HTTPException(status_code=404, detail="No inventory items found")
+        
         return [
             InventoryData(
                 InventoryID=row[0],
@@ -116,3 +145,4 @@ class InventoryCRUD:
             )
             for row in inventories
         ]
+

@@ -1,41 +1,69 @@
 from fastapi import APIRouter, HTTPException, status
-
 from CRUD.user import UserData, userCRUD, UserCreate
 
 router = APIRouter()
 crud = userCRUD()
 
-@router.post("/user/create", response_model=int)
+@router.post("/user/create", response_model=UserData)
 def create(data: UserCreate):
-    user_id = crud.create(data)
-    if user_id is None:
-        # Si la creación falló, se lanza una excepción HTTP
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Error creating user"
-        )
-    return user_id
+    try:
+        user = crud.create(data)
+        return user
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error creating user")
 
 @router.put("/user/update/{id_}")
 def update(id_: int, data: UserData):
-    return crud.update(id_, data)
+    try:
+        return crud.update(id_, data)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error updating user")
 
 @router.delete("/user/delete/{id_}")
 def delete(id_: int):
-    return crud.delete(id_)
+    try:
+        return crud.delete(id_)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error deleting user")
 
 @router.get("/user/get_by_id/{id_}")
 def get_by_id(id_: int):
-    return crud.get_by_id(id_)
+    try:
+        return crud.get_by_id(id_)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error fetching user")
+
 @router.get("/user/get_all")
 def get_all():
-    return crud.get_all()
+    try:
+        return crud.get_all()
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error fetching all users")
 
 @router.get("/user/get_by_name/{name}")
 def get_by_name(name: str):
-    return crud.get_by_name(name)
-
+    try:
+        return crud.get_by_name(name)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error fetching users by name")
 
 @router.get("/user/get_by_email/{email}")
 def get_by_email(email: str):
-    return crud.get_by_email(email)
+    try:
+        return crud.get_by_email(email)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error fetching user by email")
