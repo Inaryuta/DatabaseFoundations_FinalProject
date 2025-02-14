@@ -91,7 +91,7 @@ class HistoryReceiptsCRUD:
         FROM History_Receipts H
         JOIN Receipt R ON H.ReceiptID = R.ReceiptID 
         ORDER BY H.Date DESC
-        LIMIT %s OFFSET %s;
+        LIMIT 10 OFFSET 0;
         """
         cursor = self.db_connection.connection.cursor()
         cursor.execute(query)
