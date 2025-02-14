@@ -34,8 +34,8 @@ class ReceiptCRUD:
     def create(self, data: ReceiptCreate):
         query = """
             INSERT INTO Receipt (UserID, SupplierID, TotalAmount, ReceiptType, InventoryReceiptID)
-            VALUES (%s, %s, %s, %s, %s)
-            RETURNING ReceiptID;
+        VALUES (%s, %s, %s, %s, %s)
+        RETURNING ReceiptID;
         """
         try:
             values = (data.UserID, data.SupplierID, data.TotalAmount, data.ReceiptType, data.InventoryReceiptID)
@@ -93,8 +93,13 @@ class ReceiptCRUD:
 
     def get_all(self) -> List[ReceiptData]:
         query = """
-            SELECT ReceiptID, UserID, SupplierID, Date, TotalAmount, ReceiptType, InventoryReceiptID
-            FROM Receipt;
+            SELECT R.ReceiptID, U.Username, S.Name AS Supplier, R.Date,
+               R.TotalAmount, R.ReceiptType
+        FROM Receipt R
+        JOIN users U ON R.UserID = U.UserID  
+        JOIN Supplier S ON R.SupplierID = S.SupplierID  
+        ORDER BY R.Date DESC
+        LIMIT 10 OFFSET 0;
         """
         cursor = self.db_connection.connection.cursor()
         cursor.execute(query)
