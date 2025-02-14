@@ -34,8 +34,8 @@ class AccessoryCRUD:
     def create(self, data: AccessoryCreate):
         query = """
             INSERT INTO Accessory (Name, Description, Price, Stock, CategoryID, BrandID)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            RETURNING AccessoryID;
+        VALUES (%s, %s, %s, %s, %s, %s)
+        RETURNING AccessoryID;
         """
         try:
             values = (data.Name, data.Description, data.Price, data.Stock, data.CategoryID, data.BrandID)
@@ -93,8 +93,13 @@ class AccessoryCRUD:
 
     def get_all(self) -> List[AccessoryData]:
         query = """
-            SELECT AccessoryID, Name, Description, Price, Stock, CategoryID, BrandID
-            FROM Accessory;
+            SELECT A.AccessoryID, A.Name, A.Description, A.Price, A.Stock,
+               C.Name AS Category, B.Name AS Brand
+        FROM Accessory A
+        JOIN Category C ON A.CategoryID = C.CategoryID
+        JOIN Brand B ON A.BrandID = B.BrandID
+        ORDER BY A.Name
+        LIMIT 10 OFFSET 0;
         """
         cursor = self.db_connection.connection.cursor()
         cursor.execute(query)
