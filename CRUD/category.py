@@ -3,9 +3,19 @@ from .database_connection import PostgresDatabaseConnection
 from typing import List
 from pydantic import BaseModel
 
+from pydantic import BaseModel
+
 class categoryData(BaseModel):
-    Name: str
-    Description: str
+    name: str
+    description: str
+
+    class Config:
+        allow_population_by_field_name = True
+        fields = {
+            "name": {"alias": "Name"},
+            "description": {"alias": "Description"}
+        }
+
 
 class categoryCRUD:
     def __init__(self):
@@ -30,7 +40,7 @@ class categoryCRUD:
             RETURNING CategoryID;
         """
         try:
-            values = (data.Name, data.Description)
+            values = (data.name, data.description)
             cursor = self.db_connection.connection.cursor()
             cursor.execute(query, values)
             category_id = cursor.fetchone()[0]
@@ -41,18 +51,22 @@ class categoryCRUD:
             self.db_connection.connection.rollback()
             print(f"Failing in the category creation. {e}")
             raise e
+
         
-    def update(self,  id_: int, data: categoryData):
+    def update(self, id_: int, data: categoryData):
         query = """
             UPDATE Category
             SET Name = %s, Description = %s
             WHERE CategoryID = %s;
         """
         try:
-            values = (data.Username, data.Password, id_)
+            values = (data.name, data.description, id_)
+
             self._execution(query, values)
         except Exception as e:
-            print(f"Failing in the user update. {e}")
+            print(f"Failing in the category update. {e}")
+            raise e
+
 
     def delete(self, id_: int):
         query = """
@@ -68,32 +82,52 @@ class categoryCRUD:
     def get_all(self) -> List[categoryData]:
         query = """
             SELECT CategoryID, Name, Description
-        FROM Category
-        ORDER BY Name
-        LIMIT 10 OFFSET 0;
+            FROM Category
+            ORDER BY Name
+            LIMIT 10 OFFSET 0;
         """
-        category = []
         try:
             cursor = self.db_connection.connection.cursor()
             cursor.execute(query)
-            category = cursor.fetchall()
+            rows = cursor.fetchall()
+            cursor.close()
+            # Mapea cada fila, convirtiendo las claves a minúsculas
+            categories = []
+            for row in rows:
+                # row es una tupla: (CategoryID, Name, Description)
+                # Creamos un diccionario con las claves correctas
+                data = {
+                    "name": row[1],
+                    "description": row[2]
+                }
+                categories.append(categoryData(**data))
+            return categories
         except Exception as e:
-            print(f"Fail getting all the users. {e}")
+            print(f"Error obteniendo todas las categorías: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Error obteniendo las categorías"
+            )
 
-        return category
-    
-    def get_by_name(self, name: str):
+
+    def get_by_name(self, name: str) -> List[categoryData]:
         query = """
             SELECT CategoryID, Name, Description
             FROM Category
-            WHERE CategoryID ILIKE %s;
+            WHERE Name ILIKE %s;
         """
         try:
-            values = (f"%{name}%", )
             cursor = self.db_connection.connection.cursor()
-            cursor.execute(query, values)
-            users = cursor.fetchall()
+            # Formamos el patrón en Python
+            pattern = f"%{name}%"
+            print("Query parameter:", pattern)  # Debug: muestra el patrón
+            cursor.execute(query, (pattern,))
+            rows = cursor.fetchall()
+            print("Rows fetched:", rows)  # Debug: muestra las filas obtenidas
             cursor.close()
-            return users
+            # Mapea las filas al modelo usando los nombres en minúsculas
+            return [categoryData(name=row[1], description=row[2]) for row in rows]
         except Exception as e:
-            print(f"Fail getting users by name. {e}")
+            print(f"Fail getting category by name. {e}")
+            return []
+
