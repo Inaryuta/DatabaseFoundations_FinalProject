@@ -12,6 +12,16 @@ class InstrumentCreate(BaseModel):
     CategoryID: int
     BrandID: int
 
+class InstrumentDataWithNames(BaseModel):
+    InstrumentID: int
+    Name: str
+    Description: str
+    Price: float
+    Stock: int
+    CategoryName: str
+    BrandName: str
+
+
 class InstrumentData(InstrumentCreate):
     InstrumentID: int
 
@@ -91,29 +101,39 @@ class InstrumentCRUD:
             )
         raise HTTPException(status_code=404, detail="Instrument not found")
 
-    def get_all(self) -> List[InstrumentData]:
+    def get_all(self) -> List[InstrumentDataWithNames]:
         query = """
-            SELECT I.InstrumentID, I.Name, I.Description, I.Price, I.Stock,
-               C.Name AS Category, B.Name AS Brand
-        FROM Instrument I
-        JOIN Category C ON I.CategoryID = C.CategoryID 
-        JOIN Brand B ON I.BrandID = B.BrandID          
-        ORDER BY I.Name
-        LIMIT 10 OFFSET 0; 
+            SELECT 
+                I.InstrumentID, 
+                I.Name, 
+                I.Description, 
+                I.Price, 
+                I.Stock, 
+                C.Name AS CategoryName, 
+                B.Name AS BrandName
+            FROM Instrument I
+            JOIN Category C ON I.CategoryID = C.CategoryID
+            JOIN Brand B ON I.BrandID = B.BrandID;
         """
-        cursor = self.db_connection.connection.cursor()
-        cursor.execute(query)
-        instruments = cursor.fetchall()
-        cursor.close()
-        return [
-            InstrumentData(
-                InstrumentID=row[0],
-                Name=row[1],
-                Description=row[2],
-                Price=row[3],
-                Stock=row[4],
-                CategoryID=row[5],
-                BrandID=row[6]
+        try:
+            cursor = self.db_connection.connection.cursor()
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            cursor.close()
+            return [
+                InstrumentDataWithNames(
+                    InstrumentID=row[0],
+                    Name=row[1],
+                    Description=row[2],
+                    Price=row[3],
+                    Stock=row[4],
+                    CategoryName=row[5],
+                    BrandName=row[6]
+                ) for row in rows
+            ]
+        except Exception as e:
+            print(f"Error obteniendo todos los instrumentos: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Error obteniendo instrumentos"
             )
-            for row in instruments
-        ]
