@@ -15,12 +15,15 @@ class ReceiptCreate(BaseModel):
 
 class ReceiptData(BaseModel):
     ReceiptID: int
-    UserID: Optional[int]  # Puede ser null si es un proveedor quien creó el recibo
-    SupplierID: Optional[int]  # Ahora es opcional
-    Date: Optional[datetime]
+    UserName: Optional[str] = None
+    SupplierName: Optional[str] = None
+    ItemName: Optional[str] = None
+    Date: datetime
     TotalAmount: float
     ReceiptType: str
-    InventoryReceiptID: Optional[int]  # Puede ser null si n
+    UserID: Optional[int] = None
+    SupplierID: Optional[int] = None
+    InventoryReceiptID: Optional[int] = None
 
 class ReceiptCRUD:
     def __init__(self):
@@ -247,3 +250,41 @@ class ReceiptCRUD:
             )
             for row in receipts
         ]
+
+    def get_receipt_details(self):
+            query = """
+            SELECT 
+                R.ReceiptID, 
+                U.Username AS UserName, 
+                COALESCE(S.Name, 'No Supplier') AS SupplierName, 
+                COALESCE(I.Name, A.Name, 'No Item') AS ItemName,
+                R.Date, 
+                R.TotalAmount, 
+                R.ReceiptType
+            FROM Receipt R
+            LEFT JOIN users U ON R.UserID = U.UserID
+            LEFT JOIN Supplier S ON R.SupplierID = S.SupplierID
+            LEFT JOIN Inventory_Receipt IR ON R.InventoryReceiptID = IR.InventoryReceiptID
+            LEFT JOIN Inventory Inv ON IR.InventoryID = Inv.InventoryID
+            LEFT JOIN Instrument I ON Inv.InstrumentID = I.InstrumentID
+            LEFT JOIN Accessory A ON Inv.AccessoryID = A.AccessoryID
+            ORDER BY R.Date DESC;
+            """
+            
+            cursor = self.db_connection.connection.cursor()
+            cursor.execute(query)
+            receipts = cursor.fetchall()
+            cursor.close()
+
+            return [
+                {
+                    "ReceiptID": row[0],
+                    "UserName": row[1],
+                    "SupplierName": row[2],
+                    "ItemName": row[3],
+                    "Date": str(row[4]),
+                    "TotalAmount": float(row[5]),
+                    "ReceiptType": row[6]
+                }
+                for row in receipts
+            ]

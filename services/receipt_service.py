@@ -25,3 +25,7 @@ def get_by_id_receipt(id_: int):
 @router.get("/receipt/get_all", response_model=list[ReceiptData])
 def get_all_receipts():
     return crud.get_all()
+
+@router.get("/receipt/details", response_model=list[ReceiptData])
+def get_receipt_details():
+    return crud.get_receipt_details()

@@ -1,102 +1,129 @@
 CREATE TABLE Category (
-    CategoryID INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    CategoryID SERIAL PRIMARY KEY,
     Name VARCHAR(100) NOT NULL,
     Description TEXT NULL
 );
 
 CREATE TABLE Brand (
-    BrandID INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    BrandID SERIAL PRIMARY KEY,
     Name VARCHAR(100) NOT NULL,
     Country VARCHAR(100) NULL
 );
 
 CREATE TABLE Instrument (
-    InstrumentID INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    InstrumentID SERIAL PRIMARY KEY,
     Name VARCHAR(255) NOT NULL,
     Description TEXT NULL,
-    Price DECIMAL(10,2) NOT NULL CHECK(Price > 0),
-    Stock INT NOT NULL CHECK(Stock >= 0),
+    Price DECIMAL(10,2) NOT NULL CHECK (Price > 0),
+    Stock INT NOT NULL CHECK (Stock >= 0),
     CategoryID INT NOT NULL,
     BrandID INT NOT NULL,
-    FOREIGN KEY (CategoryID) REFERENCES Category(CategoryID),
-    FOREIGN KEY (BrandID) REFERENCES Brand(BrandID)
+    CONSTRAINT fk_instrument_category FOREIGN KEY (CategoryID) REFERENCES Category(CategoryID) ON DELETE CASCADE,
+    CONSTRAINT fk_instrument_brand FOREIGN KEY (BrandID) REFERENCES Brand(BrandID) ON DELETE CASCADE
 );
 
 CREATE TABLE Accessory (
-    AccessoryID INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    AccessoryID SERIAL PRIMARY KEY,
     Name VARCHAR(255) NOT NULL,
     Description TEXT NULL,
-    Price DECIMAL(10,2) NOT NULL CHECK(Price > 0),
-    Stock INT NOT NULL CHECK(Stock >= 0),
+    Price DECIMAL(10,2) NOT NULL CHECK (Price > 0),
+    Stock INT NOT NULL CHECK (Stock >= 0),
     CategoryID INT NOT NULL,
     BrandID INT NOT NULL,
-    FOREIGN KEY (CategoryID) REFERENCES Category(CategoryID),
-    FOREIGN KEY (BrandID) REFERENCES Brand(BrandID)
+    CONSTRAINT fk_accessory_category FOREIGN KEY (CategoryID) REFERENCES Category(CategoryID) ON DELETE CASCADE,
+    CONSTRAINT fk_accessory_brand FOREIGN KEY (BrandID) REFERENCES Brand(BrandID) ON DELETE CASCADE
 );
 
-CREATE TABLE User (
-    UserID INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+CREATE TABLE "users" (
+    UserID SERIAL PRIMARY KEY,
     Username VARCHAR(100) UNIQUE NOT NULL,
     Password VARCHAR(255) NOT NULL,
-    Role ENUM('administrator', 'customer') NOT NULL,
+    Role VARCHAR(20) CHECK (Role IN ('administrator', 'customer')) NOT NULL,
     Email VARCHAR(255) UNIQUE NOT NULL
 );
 
 CREATE TABLE Supplier (
-    SupplierID INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    SupplierID SERIAL PRIMARY KEY,
     Name VARCHAR(255) NOT NULL,
     Address VARCHAR(255) NULL,
     ContactInfo VARCHAR(255) NOT NULL
 );
 
--- Crear Receipt sin la referencia a Inventory_Receipt
 CREATE TABLE Receipt (
-    ReceiptID INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
-    UserID INT NOT NULL,
+    ReceiptID SERIAL PRIMARY KEY,
+    UserID INT NULL,
     SupplierID INT NULL,
     Date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    TotalAmount DECIMAL(10,2) NOT NULL CHECK(TotalAmount >= 0),
-    ReceiptType ENUM('purchase', 'sale') NOT NULL,
-    FOREIGN KEY (UserID) REFERENCES User(UserID),
-    FOREIGN KEY (SupplierID) REFERENCES Supplier(SupplierID)
+    TotalAmount DECIMAL(10,2) NOT NULL CHECK (TotalAmount >= 0),
+    ReceiptType VARCHAR(20) CHECK (ReceiptType IN ('purchase', 'sale')) NOT NULL,
+    CONSTRAINT fk_receipt_user FOREIGN KEY (UserID) REFERENCES "User"(UserID) ON DELETE CASCADE,
+    CONSTRAINT fk_receipt_supplier FOREIGN KEY (SupplierID) REFERENCES Supplier(SupplierID) ON DELETE SET NULL
 );
 
--- Crear Inventory sin la clave foránea a Inventory_Receipt
 CREATE TABLE Inventory (
-    InventoryID INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
-    InstrumentID INT NOT NULL,
-    AccessoryID INT NOT NULL,
-    Quantity INT NOT NULL CHECK(Quantity >= 0),
-    DateUpdated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (InstrumentID) REFERENCES Instrument(InstrumentID),
-    FOREIGN KEY (AccessoryID) REFERENCES Accessory(AccessoryID)
+    InventoryID SERIAL PRIMARY KEY,
+    InstrumentID INT NULL,
+    AccessoryID INT NULL,
+    Quantity INT NOT NULL CHECK (Quantity >= 0),
+    DateUpdated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_inventory_instrument FOREIGN KEY (InstrumentID) REFERENCES Instrument(InstrumentID) ON DELETE SET NULL,
+    CONSTRAINT fk_inventory_accessory FOREIGN KEY (AccessoryID) REFERENCES Accessory(AccessoryID) ON DELETE SET NULL
 );
 
--- Crear History_Receipts
 CREATE TABLE History_Receipts (
-    HistoryID INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    HistoryID SERIAL PRIMARY KEY,
     ReceiptID INT NOT NULL,
     Date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    Status ENUM('completed', 'refunded') NOT NULL,
-    FOREIGN KEY (ReceiptID) REFERENCES Receipt(ReceiptID)
+    Status VARCHAR(20) CHECK (Status IN ('completed', 'refunded')) NOT NULL,
+    CONSTRAINT fk_history_receipt FOREIGN KEY (ReceiptID) REFERENCES Receipt(ReceiptID) ON DELETE CASCADE
 );
 
--- Crear Inventory_Receipt con referencias a Inventory y Receipt
 CREATE TABLE Inventory_Receipt (
-    InventoryReceiptID INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    InventoryReceiptID SERIAL PRIMARY KEY,
     InventoryID INT NOT NULL,
     ReceiptID INT NOT NULL,
-    Quantity INT NOT NULL CHECK(Quantity > 0),
-    FOREIGN KEY (InventoryID) REFERENCES Inventory(InventoryID),
-    FOREIGN KEY (ReceiptID) REFERENCES Receipt(ReceiptID)
+    Quantity INT NOT NULL CHECK (Quantity > 0),
+    CONSTRAINT fk_inventory_receipt_inventory FOREIGN KEY (InventoryID) REFERENCES Inventory(InventoryID) ON DELETE CASCADE,
+    CONSTRAINT fk_inventory_receipt_receipt FOREIGN KEY (ReceiptID) REFERENCES Receipt(ReceiptID) ON DELETE CASCADE
 );
 
--- Agregar la clave foránea en Receipt para InventoryReceiptID
 ALTER TABLE Receipt 
 ADD COLUMN InventoryReceiptID INT NULL,
-ADD CONSTRAINT fk_inventory_receipt FOREIGN KEY (InventoryReceiptID) REFERENCES Inventory_Receipt(InventoryReceiptID);
+ADD CONSTRAINT fk_receipt_inventoryreceipt FOREIGN KEY (InventoryReceiptID) REFERENCES Inventory_Receipt(InventoryReceiptID) ON DELETE SET NULL;
 
--- Agregar la clave foránea en Inventory para InventoryReceiptID
 ALTER TABLE Inventory 
 ADD COLUMN InventoryReceiptID INT NULL,
-ADD CONSTRAINT fk_inventory_inventoryreceipt FOREIGN KEY (InventoryReceiptID) REFERENCES Inventory_Receipt(InventoryReceiptID);
+ADD CONSTRAINT fk_inventory_inventoryreceipt FOREIGN KEY (InventoryReceiptID) REFERENCES Inventory_Receipt(InventoryReceiptID) ON DELETE SET NULL;
+
+
+INSERT INTO Category (Name, Description)
+VALUES 
+    ('Guitarras', 'Instrumentos de cuerda, típicos en la música popular y clásica'),
+    ('Baterías', 'Instrumentos de percusión utilizados en muchos géneros musicales'),
+    ('Pianos', 'Instrumento musical de cuerdas percutidas'),
+    ('Teclados', 'Instrumentos musicales con teclas que producen sonido mediante osciladores electrónicos');
+
+INSERT INTO Brand (Name, Country)
+VALUES 
+    ('Fender', 'Estados Unidos'),
+    ('Yamaha', 'Japón'),
+    ('Roland', 'Japón'),
+    ('Gibson', 'Estados Unidos');
+
+INSERT INTO Instrument (Name, Description, Price, Stock, CategoryID, BrandID)
+VALUES
+    ('Fender Stratocaster', 'Guitarra eléctrica clásica', 799.99, 10, 1, 1),
+    ('Yamaha Drum Kit', 'Set de batería acústica completo', 499.99, 5, 2, 2),
+    ('Yamaha Grand Piano', 'Piano acústico de cola', 10000.00, 3, 3, 2),
+    ('Roland Keyboard', 'Teclado electrónico con múltiples sonidos', 349.99, 15, 4, 3);
+
+
+INSERT INTO Accessory (Name, Description, Price, Stock, CategoryID, BrandID)
+VALUES 
+    ('Cuerdas de guitarra', 'Juego de cuerdas de repuesto para guitarra eléctrica', 12.99, 30, 1, 1),
+    ('Baquetas de batería', 'Juego de baquetas para baterías acústicas', 7.99, 50, 2, 2),
+    ('Silla para piano', 'Silla ajustable para pianistas', 99.99, 10, 3, 2),
+    ('Pedal para teclado', 'Pedal de sustain para teclado Roland', 25.50, 20, 4, 3);
+
+
+ALTER TABLE Receipt ALTER COLUMN UserID DROP NOT NULL;
