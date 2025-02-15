@@ -1,5 +1,7 @@
 from fastapi import APIRouter
-from CRUD.instrument import InstrumentCRUD, InstrumentCreate, InstrumentData
+from typing import List
+
+from CRUD.instrument import InstrumentCRUD, InstrumentCreate, InstrumentData, InstrumentDataWithNames
 
 router = APIRouter()
 crud = InstrumentCRUD()
@@ -20,6 +22,6 @@ def delete_instrument(id_: int):
 def get_by_id_instrument(id_: int):
     return crud.get_by_id(id_)
 
-@router.get("/instrument/get_all", response_model=list[InstrumentData])
+@router.get("/instrument/get_all", response_model=List[InstrumentDataWithNames])
 def get_all_instruments():
     return crud.get_all()
