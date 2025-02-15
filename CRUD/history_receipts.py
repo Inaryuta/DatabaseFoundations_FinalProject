@@ -3,6 +3,7 @@ from typing import List
 from pydantic import BaseModel
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
+from datetime import datetime
 
 class HistoryReceiptsCreate(BaseModel):
     ReceiptID: int
@@ -10,7 +11,7 @@ class HistoryReceiptsCreate(BaseModel):
 
 class HistoryReceiptsData(HistoryReceiptsCreate):
     HistoryID: int
-    Date: str
+    Date: datetime
 
 class HistoryReceiptsCRUD:
     def __init__(self):
@@ -68,7 +69,7 @@ class HistoryReceiptsCRUD:
 
     def get_by_id(self, id_: int) -> HistoryReceiptsData:
         query = """
-            SELECT HistoryID, ReceiptID, Date, Status
+            SELECT HistoryID, ReceiptID, "Date", Status
             FROM History_Receipts
             WHERE HistoryID = %s;
         """
@@ -87,11 +88,13 @@ class HistoryReceiptsCRUD:
 
     def get_all(self) -> List[HistoryReceiptsData]:
         query = """
-            SELECT H.HistoryID, H.ReceiptID, R.TotalAmount, H.Date, H.Status
-        FROM History_Receipts H
-        JOIN Receipt R ON H.ReceiptID = R.ReceiptID 
-        ORDER BY H.Date DESC
-        LIMIT 10 OFFSET 0;
+            SELECT 
+                HistoryID, 
+                ReceiptID, 
+                "Date", 
+                Status
+            FROM History_Receipts
+            ORDER BY "Date" DESC;
         """
         cursor = self.db_connection.connection.cursor()
         cursor.execute(query)
@@ -101,7 +104,7 @@ class HistoryReceiptsCRUD:
             HistoryReceiptsData(
                 HistoryID=row[0],
                 ReceiptID=row[1],
-                Date=str(row[2]),
+                Date=row[2],  # Se asume que es un objeto datetime
                 Status=row[3]
             )
             for row in histories
