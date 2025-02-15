@@ -130,4 +130,3 @@ class AccessoryCRUD:
             ]
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Error retrieving accessories: {str(e)}")
-
