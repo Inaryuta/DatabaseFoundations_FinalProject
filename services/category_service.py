@@ -24,9 +24,6 @@ def update(id_: int, data: categoryData):
 def delete(id_: int):
     return crud.delete(id_)
 
-@router.get("/category/get_by_id/{id_}")
-def get_by_id(id_: int):
-    return crud.get_by_id(id_)
 @router.get("/category/get_all")
 def get_all():
     return crud.get_all()
@@ -34,8 +31,3 @@ def get_all():
 @router.get("/category/get_by_name/{name}")
 def get_by_name(name: str):
     return crud.get_by_name(name)
-
-
-@router.get("/category/get_by_email/{email}")
-def get_by_email(email: str):
-    return crud.get_by_email(email)
