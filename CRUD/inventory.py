@@ -4,28 +4,27 @@ from pydantic import BaseModel
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
-class InstrumentCreate(BaseModel):
-    Name: str
-    Description: str | None
-    Price: float
-    Stock: int
-    CategoryID: int
-    BrandID: int
-
-class InstrumentDataWithNames(BaseModel):
+class InventoryCreate(BaseModel):
     InstrumentID: int
-    Name: str
-    Description: str
-    Price: float
-    Stock: int
-    CategoryName: str
-    BrandName: str
+    AccessoryID: int
+    Quantity: int
+    InventoryReceiptID: int | None
+
+from datetime import datetime
+from pydantic import BaseModel
+
+class InventoryData(BaseModel):
+    InventoryID: int
+    InstrumentID: int | None
+    AccessoryID: int | None
+    Quantity: int
+    DateUpdated: datetime  
+
+    class Config:
+        orm_mode = True
 
 
-class InstrumentData(InstrumentCreate):
-    InstrumentID: int
-
-class InstrumentCRUD:
+class InventoryCRUD:
     def __init__(self):
         self.db_connection = PostgresDatabaseConnection()
         self.db_connection.connect()
@@ -41,79 +40,76 @@ class InstrumentCRUD:
             print(f"Database operation failed. {e}")
             raise e
 
-    def create(self, data: InstrumentCreate):
+    def create(self, data: InventoryCreate):
         query = """
-            INSERT INTO Instrument (Name, Description, Price, Stock, CategoryID, BrandID)
-        VALUES (%s, %s, %s, %s, %s, %s)
-        RETURNING InstrumentID;
+            INSERT INTO Inventory (InstrumentID, AccessoryID, Quantity)
+            VALUES (%s, %s, %s)
+            RETURNING InventoryID;
         """
         try:
-            values = (data.Name, data.Description, data.Price, data.Stock, data.CategoryID, data.BrandID)
+            values = (data.InstrumentID, data.AccessoryID, data.Quantity)
             cursor = self.db_connection.connection.cursor()
             cursor.execute(query, values)
-            instrument_id = cursor.fetchone()[0]
+            inventory_id = cursor.fetchone()[0]
             self.db_connection.connection.commit()
             cursor.close()
-            return instrument_id
+            return inventory_id
         except IntegrityError:
             self.db_connection.connection.rollback()
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Error in instrument creation"
+                detail="Error in inventory creation"
             )
 
-    def update(self, id_: int, data: InstrumentData):
+    def update(self, id_: int, data: InventoryData):
         query = """
-            UPDATE Instrument
-            SET Name = %s, Description = %s, Price = %s, Stock = %s, CategoryID = %s, BrandID = %s
-            WHERE InstrumentID = %s;
+            UPDATE Inventory
+            SET InstrumentID = %s, AccessoryID = %s, Quantity = %s
+            WHERE InventoryID = %s;
         """
-        values = (data.Name, data.Description, data.Price, data.Stock, data.CategoryID, data.BrandID, id_)
+        values = (data.InstrumentID, data.AccessoryID, data.Quantity, id_)
         self._execution(query, values)
+
 
     def delete(self, id_: int):
         query = """
-            DELETE FROM Instrument
-            WHERE InstrumentID = %s;
+            DELETE FROM Inventory
+            WHERE InventoryID = %s;
         """
         values = (id_,)
         self._execution(query, values)
 
-    def get_by_id(self, id_: int) -> InstrumentData:
+    def get_by_id(self, id_: int) -> InventoryData:
         query = """
-            SELECT InstrumentID, Name, Description, Price, Stock, CategoryID, BrandID
-            FROM Instrument
-            WHERE InstrumentID = %s;
+            SELECT InventoryID, InstrumentID, AccessoryID, Quantity, DateUpdated
+            FROM Inventory
+            WHERE InventoryID = %s;
         """
-        cursor = self.db_connection.connection.cursor()
-        cursor.execute(query, (id_,))
-        instrument = cursor.fetchone()
-        cursor.close()
-        if instrument:
-            return InstrumentData(
-                InstrumentID=instrument[0],
-                Name=instrument[1],
-                Description=instrument[2],
-                Price=instrument[3],
-                Stock=instrument[4],
-                CategoryID=instrument[5],
-                BrandID=instrument[6]
+        try:
+            values = (id_,)
+            cursor = self.db_connection.connection.cursor()
+            cursor.execute(query, values)
+            row = cursor.fetchone()
+            cursor.close()
+            if row is None:
+                raise HTTPException(status_code=404, detail="Inventory not found")
+            return InventoryData(
+                InventoryID=row[0],
+                InstrumentID=row[1],
+                AccessoryID=row[2],
+                Quantity=row[3],
+                DateUpdated=row[4]
             )
-        raise HTTPException(status_code=404, detail="Instrument not found")
+        except Exception as e:
+            print(f"Error getting inventory by id: {e}")
+            raise HTTPException(status_code=400, detail="Error getting inventory")
 
-    def get_all(self) -> List[InstrumentDataWithNames]:
+
+    def get_all(self) -> List[InventoryData]:
         query = """
-            SELECT 
-                I.InstrumentID, 
-                I.Name, 
-                I.Description, 
-                I.Price, 
-                I.Stock, 
-                C.Name AS CategoryName, 
-                B.Name AS BrandName
-            FROM Instrument I
-            JOIN Category C ON I.CategoryID = C.CategoryID
-            JOIN Brand B ON I.BrandID = B.BrandID;
+            SELECT InventoryID, InstrumentID, AccessoryID, Quantity, DateUpdated
+            FROM Inventory
+            ORDER BY InventoryID;
         """
         try:
             cursor = self.db_connection.connection.cursor()
@@ -121,19 +117,18 @@ class InstrumentCRUD:
             rows = cursor.fetchall()
             cursor.close()
             return [
-                InstrumentDataWithNames(
-                    InstrumentID=row[0],
-                    Name=row[1],
-                    Description=row[2],
-                    Price=row[3],
-                    Stock=row[4],
-                    CategoryName=row[5],
-                    BrandName=row[6]
-                ) for row in rows
+                InventoryData(
+                    InventoryID=row[0],
+                    InstrumentID=row[1],
+                    AccessoryID=row[2],
+                    Quantity=row[3],
+                    DateUpdated=row[4]
+                )
+                for row in rows
             ]
         except Exception as e:
-            print(f"Error obteniendo todos los instrumentos: {e}")
+            print(f"Error obteniendo inventarios: {e}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Error obteniendo instrumentos"
+                detail="Error obteniendo inventarios"
             )
