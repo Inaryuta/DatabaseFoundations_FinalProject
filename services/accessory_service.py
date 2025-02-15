@@ -9,12 +9,12 @@ def create_accessory(data: AccessoryCreate):
     return crud.create(data)
 
 @router.put("/accessory/update/{id_}")
-def update_accessory(id_: int, data: AccessoryData):
+def update_accessory(id_: int, data: AccessoryCreate):
     return crud.update(id_, data)
 
 @router.delete("/accessory/delete/{id_}")
 def delete_accessory(id_: int):
-    return crud.delete(id_)
+    return crud.delete(id_) 
 
 @router.get("/accessory/get_by_id/{id_}", response_model=AccessoryData)
 def get_by_id_accessory(id_: int):

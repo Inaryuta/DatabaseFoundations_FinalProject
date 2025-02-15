@@ -52,22 +52,30 @@ class AccessoryCRUD:
                 detail="Error in accessory creation"
             )
 
-    def update(self, id_: int, data: AccessoryData):
+    def update(self, id_: int, data: AccessoryCreate):
         query = """
             UPDATE Accessory
             SET Name = %s, Description = %s, Price = %s, Stock = %s, CategoryID = %s, BrandID = %s
             WHERE AccessoryID = %s;
         """
-        values = (data.Name, data.Description, data.Price, data.Stock, data.CategoryID, data.BrandID, id_)
-        self._execution(query, values)
+        try:
+            values = (data.Name, data.Description, data.Price, data.Stock, data.CategoryID, data.BrandID, id_)
+            self._execution(query, values)
+            return {"detail": "Accessory updated correctly"}
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Error updating accessory: {str(e)}")
 
     def delete(self, id_: int):
         query = """
             DELETE FROM Accessory
             WHERE AccessoryID = %s;
         """
-        values = (id_,)
-        self._execution(query, values)
+        try:
+            self._execution(query, (id_,))
+            return {"detail": "Accessory deleted successfully"}  # ✅ Mensaje de éxito
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Error deleting accessory: {str(e)}")
+
 
     def get_by_id(self, id_: int) -> AccessoryData:
         query = """
@@ -75,45 +83,51 @@ class AccessoryCRUD:
             FROM Accessory
             WHERE AccessoryID = %s;
         """
-        cursor = self.db_connection.connection.cursor()
-        cursor.execute(query, (id_,))
-        accessory = cursor.fetchone()
-        cursor.close()
-        if accessory:
-            return AccessoryData(
-                AccessoryID=accessory[0],
-                Name=accessory[1],
-                Description=accessory[2],
-                Price=accessory[3],
-                Stock=accessory[4],
-                CategoryID=accessory[5],
-                BrandID=accessory[6]
-            )
-        raise HTTPException(status_code=404, detail="Accessory not found")
+        try:
+            cursor = self.db_connection.connection.cursor()
+            cursor.execute(query, (id_,))
+            accessory = cursor.fetchone()
+            cursor.close()
+            
+            if accessory:
+                return AccessoryData(
+                    AccessoryID=accessory[0],
+                    Name=accessory[1],
+                    Description=accessory[2],
+                    Price=accessory[3],
+                    Stock=accessory[4],
+                    CategoryID=accessory[5],
+                    BrandID=accessory[6]
+                )
+            else:
+                raise HTTPException(status_code=404, detail="Accessory not found")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Error retrieving accessory: {str(e)}")
 
     def get_all(self) -> List[AccessoryData]:
         query = """
-            SELECT A.AccessoryID, A.Name, A.Description, A.Price, A.Stock,
-               C.Name AS Category, B.Name AS Brand
-        FROM Accessory A
-        JOIN Category C ON A.CategoryID = C.CategoryID
-        JOIN Brand B ON A.BrandID = B.BrandID
-        ORDER BY A.Name
-        LIMIT 10 OFFSET 0;
+            SELECT AccessoryID, Name, Description, Price, Stock, CategoryID, BrandID
+            FROM Accessory
+            ORDER BY Name;
         """
-        cursor = self.db_connection.connection.cursor()
-        cursor.execute(query)
-        accessories = cursor.fetchall()
-        cursor.close()
-        return [
-            AccessoryData(
-                AccessoryID=row[0],
-                Name=row[1],
-                Description=row[2],
-                Price=row[3],
-                Stock=row[4],
-                CategoryID=row[5],
-                BrandID=row[6]
-            )
-            for row in accessories
-        ]
+        try:
+            cursor = self.db_connection.connection.cursor()
+            cursor.execute(query)
+            accessories = cursor.fetchall()
+            cursor.close()
+
+            return [
+                AccessoryData(
+                    AccessoryID=row[0],
+                    Name=row[1],
+                    Description=row[2],
+                    Price=row[3],
+                    Stock=row[4],
+                    CategoryID=row[5],
+                    BrandID=row[6]
+                )
+                for row in accessories
+            ]
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Error retrieving accessories: {str(e)}")
+
